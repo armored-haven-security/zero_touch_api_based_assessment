@@ -25,7 +25,7 @@ Follow the below mentioned steps to deploy below to deploy pre-requsites for Qua
 
 ## Important links
 
-**_Note: For Qualys Zero touch API Based Assessment, make sure that your EC2 instance has the SSM Agent installed and has SSM Inventory Configigured. For more information, refer the below links:_**
+**_Note: For Qualys Zero touch API Based Assessment, make sure that your EC2 instance has the SSM Agent installed and has SSM Inventory Configured. For more information, refer the below links:_**
 
 * [Installing and Configuring SSM Agent](http://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html)
 * [Configuring Security Roles for System Manager](http://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-access.html)
