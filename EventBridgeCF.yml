@@ -3,8 +3,8 @@ Description: Configure pre-requsites for Qualys Zero Touch API Based Assessment
 Metadata:
   Author: "Yash Jhunjhunwala"
   Version: "1.0"
-  Updated: "09/19/2022"
-  Version Comments: ""
+  Updated: "13/02/2023"
+  Version Comments: "Deploy pre-requsites for Qualys Zero Touch API Based Assessment"
 Parameters:
   APIGatewayURL:
     Default: https://qualysguard.qualys.com
@@ -12,7 +12,7 @@ Parameters:
     Type: String
   SubscriptionToken:
     Default: <SubscriptionToken>
-    Description: Follow the steps mentioned in UserGuide to generate SubscriptionToken
+    Description: Follow the steps mentioned in UserGuide to generate SubscriptionToken :- https://docs.qualys.com/en/tc/latest/#t=running_flexscans%2Fconfigure_api_based_assessment.htm
     Type: String
     NoEcho: true
 
