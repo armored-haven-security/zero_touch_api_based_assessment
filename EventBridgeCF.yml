@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Configure pre-requsites for Qualys Zero Touch API Based Assessment
+Metadata:
+  Author: "Yash Jhunjhunwala"
+  Version: "1.0"
+  Updated: "09/19/2022"
+  Version Comments: ""
+Parameters:
+  APIGatewayURL:
+    Default: https://qualysguard.qualys.com
+    Description: Qualys API Gateway URL. Find the Gateway URL at https://www.qualys.com/platform-identification/
+    Type: String
+  SubscriptionToken:
+    Default: <SubscriptionToken>
+    Description: Follow the steps mentioned in UserGuide to generate SubscriptionToken
+    Type: String
+    NoEcho: true
+
+Resources:
+  RoleForAPIDestination:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Description: Role to provide access to API Destination
+      RoleName: QualysRoleAPIBased
+
+  PolicyAPIBased:
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      Description: Managed Policy to attach to InvokeApiDestination Role
+      ManagedPolicyName: QualysPolicyAPIBased
+      Path: /
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'events:InvokeApiDestination'
+            Resource: '*'
+      Roles: 
+        - !Ref RoleForAPIDestination
+
+  APIConnection:
+    Type: AWS::Events::Connection
+    Properties:
+      Name: QualysAPIConnection
+      Description: Connection for Qualys Zero-Touch API Based Assessment
+      AuthorizationType: API_KEY
+      AuthParameters:
+        ApiKeyAuthParameters:
+          ApiKeyName: X-API-KEY
+          ApiKeyValue: QFLOW-SSM-EVALUATION
+        InvocationHttpParameters:
+          HeaderParameters:
+            -
+              IsValueSecret: no
+              Key: "Authorization"
+              Value: !Join [ " ", [ Bearer, !Ref SubscriptionToken ] ]
+
+  
+  APIDestination:
+    Type: AWS::Events::ApiDestination
+    Properties: 
+      ConnectionArn:  !GetAtt 'APIConnection.Arn'
+      Description: API Destination for Qualys Zero-Touch API Based Assessment
+      HttpMethod: POST
+      InvocationEndpoint: !Join [ "/", [ !Ref APIGatewayURL, qflow, aws-eb ] ]
+      InvocationRateLimitPerSecond: 300
+      Name: QualysAPIDestination
+
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: default 
+      Description: EventBridge rule 'NewInstances'
+      EventPattern:
+        source: 
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
+        detail:
+          state:
+            - running
+      State: ENABLED
+      Name: NewInstances
+      Targets: 
+         -
+          Arn: !GetAtt APIDestination.Arn
+          RoleArn: !GetAtt RoleForAPIDestination.Arn
+          Id: QualysStateChangeRule
