@@ -10,7 +10,7 @@ Follow the below mentioned steps to deploy below to deploy pre-requsites for Qua
 
 1. Login to AWS Console and navigate to CloudFormation. 
 2. Stack > Create Stack > With new resources (standard).
-3. In 'Specify template', upload the template file.
+3. In 'Specify template', upload the template file. --> EventBridgeCF.yml
 4. Click Next.
 5. Under Specify stack details, provide Stack name.
 6. In APIGatewayURL parameter, provide the Qualys API Gateway URL. Find the Gateway URL at https://www.qualys.com/platform-identification/ 
