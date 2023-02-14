@@ -18,7 +18,7 @@ Follow the below mentioned steps to deploy below to deploy pre-requsites for Qua
 8. Generate Auth token.
     --> curl --location --request POST 'https://< API Gateway URL >/auth' --header 'Content-Type: application/x-www-form-urlencoded' --data-urlencode 'username=<QualysUsername> --data-urlencode 'password=<QualysPassword>'--data-urlencode 'token=true'
 9. Generate Subscription Token.
-    --> curl --location --request POST 'https://< API Gateway URL >/qas/subscription-token' --header 'Content-Type: application/json' --header 'Authorization: Bearer <Auth Token> --data-raw '{ "expiry": 500000}'
+    --> curl --location --request POST 'https://< API Gateway URL >/qas/subscription-token' --header 'Content-Type: application/json' --header 'Authorization: Bearer **_Auth Token_** --data-raw '{ "expiry": 500000}'
 10. Provide the Subscription Token and click next.
 11. Keep the default settings step 3 and step 4.
 12. Click Next > Submit.
