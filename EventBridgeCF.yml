@@ -2,12 +2,12 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Configure pre-requsites for Qualys Zero Touch API Based Assessment
 Metadata:
   Author: "Yash Jhunjhunwala"
-  Version: "1.0"
-  Updated: "13/02/2023"
+  Version: "1.1"
+  Updated: "04/04/2023"
   Version Comments: "Deploy pre-requsites for Qualys Zero Touch API Based Assessment"
 Parameters:
   APIGatewayURL:
-    Default: https://qualysguard.qualys.com
+    Default: https://gateway.qg1.apps.qualys.com
     Description: Qualys API Gateway URL. Find the Gateway URL at https://www.qualys.com/platform-identification/
     Type: String
   SubscriptionToken:
@@ -15,11 +15,17 @@ Parameters:
     Description: Follow the steps mentioned in UserGuide to generate SubscriptionToken :- https://docs.qualys.com/en/tc/latest/#t=running_flexscans%2Fconfigure_api_based_assessment.htm
     Type: String
     NoEcho: true
+Mappings:
+  CustomVariables:
+    qualys:
+      qsstag: 'qualys-api-based-assessment'
 
 Resources:
   RoleForAPIDestination:
     Type: AWS::IAM::Role
     Properties:
+      RoleName: !Join [ "-", [ !Ref AWS::StackName, QualysRoleAPIBased ] ]
+      Description: "Role to provide access to API Destination"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -29,14 +35,15 @@ Resources:
                 - events.amazonaws.com
             Action:
               - 'sts:AssumeRole'
-      Description: Role to provide access to API Destination
-      RoleName: QualysRoleAPIBased
+      Tags:
+        - Key: App
+          Value: !FindInMap [CustomVariables, qualys, qsstag] 
 
   PolicyAPIBased:
     Type: AWS::IAM::ManagedPolicy
     Properties: 
       Description: Managed Policy to attach to InvokeApiDestination Role
-      ManagedPolicyName: QualysPolicyAPIBased
+      ManagedPolicyName: !Join [ "-", [ !Ref AWS::StackName, QualysPolicyAPIBased ] ]
       Path: /
       PolicyDocument: 
         Version: "2012-10-17"
@@ -44,6 +51,7 @@ Resources:
           - Effect: Allow
             Action:
               - 'events:InvokeApiDestination'
+              - 'events:PutEvents'
             Resource: '*'
       Roles: 
         - !Ref RoleForAPIDestination
@@ -51,7 +59,7 @@ Resources:
   APIConnection:
     Type: AWS::Events::Connection
     Properties:
-      Name: QualysAPIConnection
+      Name: !Join [ "-", [ !Ref AWS::StackName, QualysAPIConnection ] ]
       Description: Connection for Qualys Zero-Touch API Based Assessment
       AuthorizationType: API_KEY
       AuthParameters:
@@ -65,7 +73,6 @@ Resources:
               Key: "Authorization"
               Value: !Join [ " ", [ Bearer, !Ref SubscriptionToken ] ]
 
-  
   APIDestination:
     Type: AWS::Events::ApiDestination
     Properties: 
@@ -74,7 +81,7 @@ Resources:
       HttpMethod: POST
       InvocationEndpoint: !Join [ "/", [ !Ref APIGatewayURL, qflow, aws-eb ] ]
       InvocationRateLimitPerSecond: 300
-      Name: QualysAPIDestination
+      Name: !Join [ "-", [ !Ref AWS::StackName, QualysAPIDestination ] ]
 
   EventRule:
     Type: AWS::Events::Rule
@@ -96,3 +103,67 @@ Resources:
           Arn: !GetAtt APIDestination.Arn
           RoleArn: !GetAtt RoleForAPIDestination.Arn
           Id: QualysStateChangeRule
+ 
+  StackSetAdministrationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-", [ !Ref AWS::StackName, StackSetAdministrationRole ] ]
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: cloudformation.amazonaws.com
+          Action: sts:AssumeRole
+        Version: '2012-10-17'
+
+      Tags:
+        - Key: App
+          Value: !FindInMap [CustomVariables, qualys, qsstag]
+      Policies:
+      - PolicyName: assume-execution-role-policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Resource: !Join [ "" , [ !Sub 'arn:aws:iam::${AWS::AccountId}:role/', !Join [ "-", [ !Ref AWS::StackName, StackSetExecutionRole ] ] ] ]
+  
+  StackSetExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ "-", [ !Ref AWS::StackName, StackSetExecutionRole ] ]
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            AWS: !GetAtt 'StackSetAdministrationRole.Arn'
+          Action: sts:AssumeRole
+        Version: '2012-10-17'
+      Tags:
+        - Key: App
+          Value: !FindInMap [CustomVariables, qualys, qsstag]
+      Policies:
+      - PolicyName: stack-execution-policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - events:*
+              - cloudformation:*
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - iam:PassRole
+            Resource: !GetAtt 'RoleForAPIDestination.Arn'
+
+Outputs:
+  RoleARN:
+    Description: Role ARN for API Destination
+    Value: !GetAtt RoleForAPIDestination.Arn
+  StackSetAdministrationRoleArn:
+    Description: Stack Set Administration Role Name
+    Value: !Ref StackSetAdministrationRole
+  StackSetExecutionRoleArn:
+    Description: Stack Set Execution Role Name
+    Value: !Ref StackSetExecutionRole
