@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Configure cross region event bridge rules for Qualys Zero Touch API Based Assessment
+Metadata:
+  Author: "Yash Jhunjhunwala"
+  Version: "1.1"
+  Updated: "28/03/2023"
+  Version Comments: "Configure cross region event bridge rules for Qualys Zero Touch API Based Assessment"
+Parameters:
+  RoleARN:
+    Type: String
+    Default: <RoleARN>
+    Description: Enter the Qulays API Based Assessment Role Bus ARN from the previous Stack Deployment
+  StackRegion:
+    Type: String
+    Default: <StackRegion>
+    Description: Enter the EventBridge Deployment Region
+
+Resources:
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: default 
+      Description: EventBridge rule 'NewInstances'
+      EventPattern:
+        source: 
+          - aws.ec2
+        detail-type:  
+          - EC2 Instance State-change Notification
+        detail:
+          state:
+            - running
+      State: ENABLED
+      Name: NewInstances
+      Targets: 
+         -
+          Arn: !Join [ ":", [ 'arn', 'aws', 'events', !Ref StackRegion, !Ref AWS::AccountId, 'event-bus/default' ] ]
+          RoleArn: !Ref RoleARN
+          Id: QualysStateChangeCrossRegionRule
