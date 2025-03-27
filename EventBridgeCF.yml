@@ -1,20 +1,23 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Configure pre-requsites for Qualys Zero Touch API Based Assessment
 Metadata:
-  Author: "Yash Jhunjhunwala"
+  Author: "Yash Jhunjhunwala & Derrek Arce"
   Version: "1.1"
   Updated: "04/04/2023"
-  Version Comments: "Deploy pre-requsites for Qualys Zero Touch API Based Assessment"
+  Version Comments: "This is the first step to deploy resources necessary for Qualys Zero Touch API Based Assessment"
 Parameters:
   APIGatewayURL:
     Default: https://gateway.qg1.apps.qualys.com
     Description: Qualys API Gateway URL. Find the Gateway URL at https://www.qualys.com/platform-identification/
     Type: String
-  SubscriptionToken:
-    Default: <SubscriptionToken>
-    Description: Follow the steps mentioned in UserGuide to generate SubscriptionToken :- https://docs.qualys.com/en/tc/latest/#t=running_flexscans%2Fconfigure_api_based_assessment.htm
+  OrgId:
+    Default: <Org-ID>
+    Description: Organizational ID, beginning with o-
     Type: String
-    NoEcho: true
+  SubscriptionTokenARN:
+    Default: <SubToken ARN>
+    Description: Enter the SSM ARN for the Qualys Subscription Token
+    Type: String
 Mappings:
   CustomVariables:
     qualys:
@@ -69,9 +72,9 @@ Resources:
         InvocationHttpParameters:
           HeaderParameters:
             -
-              IsValueSecret: no
-              Key: "Authorization"
-              Value: !Join [ " ", [ Bearer, !Ref SubscriptionToken ] ]
+              IsValueSecret: true
+              Key: "QualysSubToken"
+              Value: !Ref SubscriptionTokenARN
 
   APIDestination:
     Type: AWS::Events::ApiDestination
@@ -99,8 +102,7 @@ Resources:
       State: ENABLED
       Name: NewInstances
       Targets: 
-         -
-          Arn: !GetAtt APIDestination.Arn
+        - Arn: !GetAtt APIDestination.Arn
           RoleArn: !GetAtt RoleForAPIDestination.Arn
           Id: QualysStateChangeRule
  
@@ -156,6 +158,19 @@ Resources:
             Action:
               - iam:PassRole
             Resource: !GetAtt 'RoleForAPIDestination.Arn'
+  EventBusPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Properties:
+      StatementId: "AllowMemberAccounts"
+      EventBusName: "default"
+      Statement: 
+        Effect: "Allow"
+        Action: "events:PutEvents"
+        Resource: !Sub 'arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/default'
+        Principal: "*"
+        Condition:
+          StringEquals:
+            "aws:PrincipalOrgId": !Ref OrgId
 
 Outputs:
   RoleARN:
