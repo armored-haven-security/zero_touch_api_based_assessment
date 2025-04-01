@@ -1,0 +1,60 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Configure cross region event bridge rules for Qualys Zero Touch API Based Assessment
+Metadata:
+  Author: "Yash Jhunjhunwala & Derrek Arce"
+  Version: "1.1"
+  Updated: "28/03/2023"
+  Version Comments: "Configure cross region event bridge rules for Qualys Zero Touch API Based Assessment"
+Parameters:
+  StackRegion:
+    Type: String
+    Default: <StackRegion>
+    Description: Enter the EventBridge Deployment Region
+  MasterAccountId:
+    Type: String
+    Default: <Master AccountId>
+    Description: Enter the org master account ID or the ID of the account in which the Event Bus resides
+
+Resources:
+  EventRuleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: Qualys-APIScan-EventRuleRole
+      Description: "Role for Qualys EventBridge rule to access cross-region event bus"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CrossAccountEventBusAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource: !Sub 'arn:aws:events:${StackRegion}:${MasterAccountId}:event-bus/default'
+  EventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: default 
+      Description: EventBridge rule 'NewInstances'
+      EventPattern:
+        source: 
+          - aws.ec2
+        detail-type:  
+          - EC2 Instance State-change Notification
+        detail:
+          state:
+            - running
+      State: ENABLED
+      Name: NewInstances
+      Targets: 
+        - Arn: !Sub 'arn:aws:events:${StackRegion}:${MasterAccountId}:event-bus/default'
+          RoleArn: !GetAtt EventRuleRole.Arn
+          Id: QualysStateChangeCrossRegionRule
