@@ -44,7 +44,7 @@ Follow the below mentioned steps to deploy below to deploy pre-requsites for Qua
 10. Click “Next”
 11. StackSet Name:- Qualys-cross-region-event-bridge
 12. Parameters
-13. RoleArn :- Enter the Qulays API Based Assessment Role Bus ARN that was created as part of the previous Stack Deployments
+13. Enter Master Account ID (or whatever account in which you're deploying the EventBus)
 14. StackRegion : Enter the EventBridge Deployment Region
 15. Click “Next” --> “Next”
 16. Set deployment options
